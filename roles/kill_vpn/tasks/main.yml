@@ -1,0 +1,17 @@
+- name: Check tmux is installed
+  ansible.builtin.package_facts:
+    manager: auto
+  register: found_packages
+  failed_when: "'tmux' not in found_packages.ansible_facts.packages"
+
+- name: Kill openconnect processes
+  ansible.builtin.shell:  # noqa:ignore-errors
+    cmd: "PIDS=$(pgrep openconnect) && [ -n ${PIDS} ] && sudo kill -9 $PIDS"
+  changed_when: false
+  ignore_errors: true
+
+- name: Kill Session
+  ansible.builtin.command:  # noqa:ignore-errors
+    cmd: tmux kill-session -t openconnect
+  changed_when: false
+  ignore_errors: true

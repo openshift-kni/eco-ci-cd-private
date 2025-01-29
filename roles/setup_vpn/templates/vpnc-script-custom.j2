@@ -1,0 +1,6 @@
+#!/bin/bash
+# this is located in: /etc/vpnc/vpnc-script-custom
+# Use internal lab DNS server
+export INTERNAL_IP4_DNS=("10.47.242.10" "10.38.5.26")
+# Run vpnc-script
+exec /etc/vpnc/vpnc-script "$@"

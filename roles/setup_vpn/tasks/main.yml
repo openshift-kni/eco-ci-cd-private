@@ -1,0 +1,60 @@
+---
+- name: Check tmux and openconnect is installed
+  ansible.builtin.package_facts:
+    manager: auto
+  register: found_packages
+  failed_when: |
+    ('tmux' not in found_packages.ansible_facts.packages) and
+    ('openconnect' not in found_packages.ansible_facts.packages)
+
+- name: Kill Previous VPN Connections
+  ansible.builtin.import_role:
+    name: kill_vpn
+
+- name: Template vpnc-script-custom
+  ansible.builtin.template:
+    src: vpnc-script-custom.j2
+    dest: /tmp/vpnc-script-custom
+    mode: "333"
+  become: true
+
+- name: Add vpn user
+  ansible.builtin.user:
+    name: "{{ vpn_username }}"
+
+- name: Setup tun
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      sudo -E ip link del {{ tun_name }} || true
+      sudo -E ip tuntap add {{ tun_name }} mode tun user {{ vpn_username }}
+      sudo chmod 666 /dev/net/tun
+  changed_when: false
+
+- name: New Session
+  ansible.builtin.command:
+    cmd: tmux new-session -d -e "VPN_PASSWORD=${VPN_PASSWORD}" -s openconnect
+  environment:
+    VPN_PASSWORD: "{{ vpn_password }}"
+  changed_when: false
+
+- name: Connect to VPN  # noqa:risky-shell-pipe
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: >-
+      tmux send -t openconnect.0
+      'echo $VPN_PASSWORD |
+      sudo openconnect -b
+      --interface={{ tun_name }}
+      --script="/tmp/vpnc-script-custom"
+      --useragent="AnyConnect-compatible OpenConnect VPN Agent"
+      --user={{ vpn_username }}
+      --server={{ vpn_url }}
+      --gnutls-priority="NORMAL:-VERS-ALL:+VERS-TLS1.2:+RSA:+AES-128-CBC:+SHA1"'
+      && tmux send-keys -t openconnect.0 Enter
+  changed_when: false
+
+- name: Pause
+  ansible.builtin.pause:
+    seconds: 10
+    echo: false
