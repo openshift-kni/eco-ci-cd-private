@@ -1,0 +1,18 @@
+---
+- name: Setup VPN
+  hosts: jump_host
+  gather_facts: true
+  roles:
+    - setup_vpn
+
+- name: Run compliance tests
+  hosts: robot
+  gather_facts: true
+  roles:
+    - exec_oran_o2ims_compliance_tests
+
+- name: Kill VPN
+  hosts: jump_host
+  gather_facts: true
+  roles:
+    - kill_vpn
