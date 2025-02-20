@@ -11,14 +11,13 @@
     version: "{{ eco_validation_repo_version | default(omit) }}"
     force: true
 
-
 - name: Run redeploy operators  # noqa:ignore-errors
   ansible.builtin.command:
     cmd: |
       ansible-playbook
       -i ~/inventory.yml playbooks/redeploy_oran_o2ims_operators.yml
       -e artifacts_dir={{ remote_artifacts_dir }}
-      > {{ remote_artifacts_dir }}/redeploy_operators.log"
+      > {{ artifacts_dir }}/redeploy_operators.log"
     chdir: "eco-validation"
   changed_when: false
   ignore_errors: true
@@ -29,7 +28,7 @@
       ansible-playbook
       -i ~/inventory.yml playbooks/run_compliance_tests.yml
       -e artifacts_dir={{ remote_artifacts_dir }}
-      > {{ remote_artifacts_dir }}/test_automation.log"
+      > {{ artifacts_dir }}/test_automation.log"
     chdir: "eco-validation"
   changed_when: false
   ignore_errors: true
@@ -45,7 +44,7 @@
 
 - name: Check if test results exists
   ansible.builtin.find:
-    path: "{{ artifacts_dir }}/compliance_tests"
+    path: "{{ artifacts_dir }}/reports"
     patterns: "output.xml,report.hmtl"
     recurse: true
   register: reports
