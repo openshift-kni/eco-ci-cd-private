@@ -11,18 +11,32 @@
     version: "{{ eco_validation_repo_version | default(omit) }}"
     force: true
 
+
+- name: Run redeploy operators  # noqa:ignore-errors
+  ansible.builtin.command:
+    cmd: |
+      ansible-playbook
+      -i ~/inventory.yml playbooks/redeploy_oran_o2ims_operators.yml
+      -e artifacts_dir={{ remote_artifacts_dir }}
+      > {{ remote_artifacts_dir }}/redeploy_operators.log"
+    chdir: "eco-validation"
+  changed_when: false
+  ignore_errors: true
+
 - name: Run tests  # noqa:ignore-errors
   ansible.builtin.command:
-    cmd: ansible-playbook -i ~/inventory.yml playbooks/run_compliance_tests.yml -e artifacts_dir={{ remote_artifacts_dir }}
+    cmd: |
+      ansible-playbook
+      -i ~/inventory.yml playbooks/run_compliance_tests.yml
+      -e artifacts_dir={{ remote_artifacts_dir }}
+      > {{ remote_artifacts_dir }}/test_automation.log"
     chdir: "eco-validation"
-  vars:
-    remote_artifacts_dir: "{{ ansible_env.HOME }}/testing"
   changed_when: false
   ignore_errors: true
 
 - name: Copy test results
   ansible.posix.synchronize:
-    src: "{{ ansible_env.HOME }}/testing/compliance_tests"
+    src: "{{ remote_artifacts_dir }}"
     dest: "{{ artifacts_dir }}"
     rsync_opts:
       - "--rsh '/usr/bin/ssh {{ hostvars[inventory_hostname]['ansible_ssh_common_args'] }}'"
