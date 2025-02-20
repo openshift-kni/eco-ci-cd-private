@@ -4,6 +4,8 @@
   gather_facts: true
   roles:
     - setup_vpn
+  tags:
+    - setup_vpn
 
 - name: Run compliance tests
   hosts: robot
@@ -15,4 +17,7 @@
   hosts: jump_host
   gather_facts: true
   roles:
+    - kill_vpn
+  tags:
+    - setup_vpn
     - kill_vpn
