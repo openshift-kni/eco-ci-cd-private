@@ -11,34 +11,56 @@
     version: "{{ eco_validation_repo_version | default(omit) }}"
     force: true
 
+
+- name: Remove artifacts_dir  # noqa:ignore-errors
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ remote_artifacts_dir }}"
+    - "{{ ansible_env.HOME }}/redeploy_operators.log"
+    - "{{ ansible_env.HOME }}/test_automation.log"
+
 - name: Run redeploy operators  # noqa:ignore-errors
-  ansible.builtin.command:
-    cmd: |
+  ansible.builtin.shell:
+    cmd: >-
       ansible-playbook
       -i ~/inventory.yml playbooks/redeploy_oran_o2ims_operators.yml
       -e artifacts_dir={{ remote_artifacts_dir }}
-      > {{ artifacts_dir }}/redeploy_operators.log"
+      -vv
+      > {{ ansible_env.HOME }}/redeploy_operators.log 2>&1
+    chdir: "eco-validation"
+  changed_when: false
+
+- name: Run tests  # noqa:ignore-errors
+  ansible.builtin.shell:
+    cmd: >-
+      ansible-playbook
+      -i ~/inventory.yml playbooks/run_compliance_tests.yml
+      -e artifacts_dir={{ remote_artifacts_dir }}
+      -vv
+      > {{ ansible_env.HOME }}/test_automation.log 2>&1
     chdir: "eco-validation"
   changed_when: false
   ignore_errors: true
 
 - name: Run tests  # noqa:ignore-errors
-  ansible.builtin.command:
-    cmd: |
-      ansible-playbook
-      -i ~/inventory.yml playbooks/run_compliance_tests.yml
-      -e artifacts_dir={{ remote_artifacts_dir }}
-      > {{ artifacts_dir }}/test_automation.log"
-    chdir: "eco-validation"
-  changed_when: false
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ remote_artifacts_dir }}"
+    remote_src: true
+    mode: "0644"
   ignore_errors: true
+  loop:
+    - "{{ ansible_env.HOME }}/redeploy_operators.log"
+    - "{{ ansible_env.HOME }}/test_automation.log"
 
 - name: Copy test results
   ansible.posix.synchronize:
-    src: "{{ remote_artifacts_dir }}"
+    src: "{{ remote_artifacts_dir }}/"
     dest: "{{ artifacts_dir }}"
     rsync_opts:
-      - "--rsh '/usr/bin/ssh {{ hostvars[inventory_hostname]['ansible_ssh_common_args'] }}'"
+      - "--rsh '/usr/bin/ssh {{ hostvars[inventory_hostname]['ansible_ssh_common_args'] | default('') }}'"
     mode: pull
   delegate_to: localhost
 
