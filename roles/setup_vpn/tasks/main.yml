@@ -21,6 +21,7 @@
 - name: Add vpn user
   ansible.builtin.user:
     name: "{{ vpn_username }}"
+  become: true
 
 - name: Setup tun
   ansible.builtin.shell:
