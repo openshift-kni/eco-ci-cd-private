@@ -1,0 +1,57 @@
+---
+- name: Run DCI pipeline tests
+  block:
+    - name: Display test information
+      ansible.builtin.debug:
+        msg: "Running the tests {{ dci_pipeline_files }} in DCI"
+
+    - name: Display site information
+      ansible.builtin.debug:
+        msg: "Pipeline executed in {{ site_name_value }}"
+
+    - name: Display DCI jobs URL
+      ansible.builtin.debug:
+        msg: "To find the current jobs, check the URL https://www.distributed-ci.io/jobs?page=1&perPage=20&where=tags:gitlab-{{ prow_pipeline_id }}"
+
+    - name: Launch tests with dci-pipeline runner
+      ansible.builtin.shell:
+        cmd: "dci-pipeline {% for file in dci_pipeline_files.split() %}dci-pipeline-stage-files/{{ file }} {% endfor %}"
+        chdir: "{{ temp_dir_path }}"
+      delegate_to: "{{ stamp_target_host }}"
+      remote_user: "{{ remote_user_name }}"
+      changed_when: false
+      environment:
+        DCI_PIPELINE_FILES: "{{ dci_pipeline_files }}"
+  when: not skip_dci
+
+- name: Execute Python tests and capture output
+  block:
+    - name: Launch tests with Python executor
+      ansible.builtin.shell:
+        cmd: "python3 slcm-ci-cd/execute_slcm.py --hook {{ temp_dir_path }}/slcm-ci-cd/dci/dci-openshift-app-agent/hooks/tests.yml dci-pipeline-stage-files/{{ dci_pipeline_files }}"
+        chdir: "{{ temp_dir_path }}"
+      delegate_to: "{{ stamp_target_host }}"
+      remote_user: "{{ remote_user_name }}"
+      changed_when: false
+      register: python_execution_output
+      failed_when: false
+
+    - name: Save Python execution output to a remote file
+      ansible.builtin.copy:
+        content: "{{ python_execution_output.stdout }}\n\nSTDERR:\n{{ python_execution_output.stderr }}"
+        dest: "{{ temp_dir_path }}/python_execution_output.log"
+      delegate_to: "{{ stamp_target_host }}"
+      remote_user: "{{ remote_user_name }}"
+      when: python_execution_output.rc == 0
+
+    - name: Get the output file to localhost
+      ansible.builtin.fetch:
+        src: "{{ temp_dir_path }}/python_execution_output.log"
+        dest: "{{ playbook_directory }}/python_execution_output.log"
+        flat: yes
+      delegate_to: "{{ stamp_target_host }}"
+      remote_user: "{{ remote_user_name }}"
+      when: python_execution_output.rc == 0
+  when: skip_dci
+  environment:
+    DCI_PIPELINE_FILES: "{{ dci_pipeline_files }}"

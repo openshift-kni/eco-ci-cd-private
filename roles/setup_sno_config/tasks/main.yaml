@@ -1,0 +1,23 @@
+---
+- name: Extract edu_kubeconfig from hub_kubeconfig
+  ansible.builtin.shell:
+    cmd: >
+      oc --kubeconfig={{ temp_dir_path }}/hub_kubeconfig 
+      -n {{ site_name_value }} get secret {{ site_name_value }}-admin-kubeconfig 
+      -o json | jq -r .data.kubeconfig | base64 -d > {{ temp_dir_path }}/edu_kubeconfig
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  register: edu_kubeconfig_result
+  changed_when: false
+
+- name: Get node information using oc command for EDU
+  ansible.builtin.command:
+    cmd: "oc --kubeconfig={{ temp_dir_path }}/edu_kubeconfig get nodes"
+  register: oc_output
+  changed_when: false
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+
+- name: Display oc command output
+  ansible.builtin.debug:
+    msg: "{{ oc_output.stdout }}"

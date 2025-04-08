@@ -1,0 +1,33 @@
+---
+- name: Create vault password file
+  ansible.builtin.shell:
+    cmd: "set -o pipefail && echo {{ vault_password | quote }} | base64 -d > {{ temp_dir_path }}/slcm-tests/inventory.vault.password.txt"
+  args:
+    executable: /bin/bash
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  no_log: true
+  changed_when: true
+
+- name: Copy VAULT_INVENTORY to target
+  ansible.builtin.copy:
+    src: "{{ playbook_directory }}/run_slcm_vault"
+    dest: "{{ temp_dir_path }}/slcm-tests/run_slcm_vault"
+    mode: "0600"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+
+- name: Ensure VAULT_INVENTORY file exists
+  ansible.builtin.stat:
+    path: "{{ temp_dir_path }}/slcm-tests/run_slcm_vault"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  register: vault_inventory_stat
+
+- name: Create vault inventory file
+  ansible.builtin.shell:
+    cmd: "printf '%s%s' '$ANSIBLE_VAULT' \"$(cat {{ temp_dir_path }}/slcm-tests/run_slcm_vault)\" > {{ temp_dir_path }}/slcm-tests/inventory.vault.yml"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  no_log: true
+  when: vault_inventory_stat.stat.exists

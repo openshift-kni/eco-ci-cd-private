@@ -1,0 +1,43 @@
+---
+- name: Create dci-pipeline-stage-files directory
+  ansible.builtin.file:
+    path: "{{ temp_dir_path }}/dci-pipeline-stage-files"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+
+- name: Echo DCI_PIPELINE_FILES
+  ansible.builtin.debug:
+    msg: "{{ dci_pipeline_files }}"
+
+- name: Copy pipeline stage files
+  ansible.builtin.command:
+    cmd: "python3 copy_dci_files.py"
+    chdir: "{{ temp_dir_path }}/slcm-ci-cd"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  changed_when: false
+  environment:
+    DCI_PIPELINE_FILES: "{{ dci_pipeline_files }}"
+
+- name: Run template_expander.py
+  ansible.builtin.command:
+    cmd: "python3 template_expander.py"
+    chdir: "{{ temp_dir_path }}/slcm-ci-cd"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  changed_when: false
+  environment:
+    ANSIBLE_SKIP_TAGS: "{{ ansible_skip_tags }}"
+    GITLAB_PIPELINE_ID: "{{ prow_pipeline_id }}"
+    LATENCY_DURATION: "{{ latency_duration }}"
+    OCP_AUTO_EDGE_REPO_PATH: "/tmp/gitlab-{{ prow_pipeline_id }}/"
+    PATH_TO_EDU_KUBECONFIG: "{{ temp_dir_path }}/edu_kubeconfig"
+    PATH_TO_HUB_KUBECONFIG: "{{ temp_dir_path }}/hub_kubeconfig"
+    PATH_TO_REPO: "{{ temp_dir_path }}"
+    OCP_VERSION: "{{ ocp_version }}"
+    STAMP: "{{ stamp_value }}"
+    DCI_REMOTE_CI: "{{ dci_remote_ci }}"
+    SITE_NAME: "{{ site_name_value }}"
+    ECO_VALIDATION_CONTAINER: "{{ eco_validation_container }}"

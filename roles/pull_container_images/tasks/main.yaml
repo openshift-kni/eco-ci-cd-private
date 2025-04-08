@@ -1,0 +1,22 @@
+---
+- name: Echo ECO_VALIDATION_CONTAINER
+  ansible.builtin.debug:
+    msg: "{{ eco_validation_container }}"
+
+- name: Pull ECO_VALIDATION_CONTAINER image
+  ansible.builtin.command:
+    cmd: "podman pull --tls-verify=false --authfile {{ podman_auth_path }} {{ eco_validation_container }}"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  changed_when: false
+
+- name: Echo ECO_GOTESTS_CONTAINER
+  ansible.builtin.debug:
+    msg: "echo {{ eco_gotests_container }}"
+
+- name: Pull ECO_GOTESTS_CONTAINER image
+  ansible.builtin.command:
+    cmd: "podman pull {{ eco_gotests_container }}"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+  changed_when: false
