@@ -57,6 +57,6 @@
       ansible.builtin.fetch:
         src: "{{ temp_dir_path }}/python_execution_output.log"
         dest: "{{ playbook_directory }}/python_execution_output.log"
-        flat: yes
+        flat: true
       delegate_to: "{{ stamp_target_host }}"
       remote_user: "{{ remote_user_name }}"

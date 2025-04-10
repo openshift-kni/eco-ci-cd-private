@@ -46,6 +46,7 @@
         dest: "{{ temp_dir.path }}"
         clone: true
         update: true
+        version: "{{ cloud_ran_partner_repo_version }}"
       delegate_to: "{{ stamp_target }}"
       remote_user: "{{ remote_user }}"
 
@@ -84,7 +85,6 @@
         stamp_target_host: "{{ stamp_target }}"
         remote_user_name: "{{ remote_user }}"
         dci_pipeline_files: "{{ DCI_PIPELINE_FILES }}"
-        ansible_skip_tags: "{{ ANSIBLE_SKIP_TAGS | default('') }}"
         prow_pipeline_id: "{{ PROW_PIPELINE_ID }}"
         latency_duration: "{{ LATENCY_DURATION | default('1800') }}"
         ocp_version: "{{ OCP_VERSION }}"

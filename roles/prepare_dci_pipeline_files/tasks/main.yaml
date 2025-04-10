@@ -29,7 +29,6 @@
   remote_user: "{{ remote_user_name }}"
   changed_when: false
   environment:
-    ANSIBLE_SKIP_TAGS: "{{ ansible_skip_tags }}"
     GITLAB_PIPELINE_ID: "{{ prow_pipeline_id }}"
     LATENCY_DURATION: "{{ latency_duration }}"
     OCP_AUTO_EDGE_REPO_PATH: "/tmp/gitlab-{{ prow_pipeline_id }}/"

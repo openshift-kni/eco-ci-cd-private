@@ -14,7 +14,6 @@ Role Variables
 | stamp_target_host           | yes      | none    |         | Target host to configure                 |
 | remote_user_name            | yes      | none    |         | Remote user for SSH connections          |
 | dci_pipeline_files          | yes      | none    |         | DCI pipeline files to use                |
-| ansible_skip_tags           | no       | ""      |         | Tags to skip in Ansible execution        |
 | prow_pipeline_id            | yes      | none    |         | Pipeline ID                              |
 | latency_duration            | no       | "1800"  |         | Latency test duration in seconds         |
 | ocp_version                 | yes      | none    |         | OpenShift version                        |
