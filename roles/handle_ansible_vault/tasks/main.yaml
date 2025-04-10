@@ -31,3 +31,4 @@
   remote_user: "{{ remote_user_name }}"
   no_log: true
   when: vault_inventory_stat.stat.exists
+  changed_when: false

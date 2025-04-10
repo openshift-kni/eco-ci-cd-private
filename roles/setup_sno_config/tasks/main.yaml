@@ -1,10 +1,16 @@
 ---
 - name: Extract edu_kubeconfig from hub_kubeconfig
   ansible.builtin.shell:
-    cmd: >
-      oc --kubeconfig={{ temp_dir_path }}/hub_kubeconfig 
-      -n {{ site_name_value }} get secret {{ site_name_value }}-admin-kubeconfig 
-      -o json | jq -r .data.kubeconfig | base64 -d > {{ temp_dir_path }}/edu_kubeconfig
+    cmd: |
+      set -o pipefail
+      oc --kubeconfig={{ temp_dir_path }}/hub_kubeconfig \
+         -n {{ site_name_value }} \
+         get secret {{ site_name_value }}-admin-kubeconfig \
+         -o json \
+      | jq -r .data.kubeconfig \
+      | base64 -d > {{ temp_dir_path }}/edu_kubeconfig
+  args:
+    executable: /bin/bash
   delegate_to: "{{ stamp_target_host }}"
   remote_user: "{{ remote_user_name }}"
   register: edu_kubeconfig_result
