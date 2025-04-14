@@ -1,0 +1,28 @@
+---
+- name: Remove hub_kubeconfig file
+  ansible.builtin.file:
+    path: "{{ temp_dir_path }}/hub_kubeconfig"
+    state: absent
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+
+- name: Copy kubeconfig file on target host
+  ansible.builtin.copy:
+    src: "{{ cluster_configs_directory }}/auth/kubeconfig"
+    dest: "{{ temp_dir_path }}/hub_kubeconfig"
+    remote_src: true
+    mode: "0775"
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+
+- name: Get node information using oc command for hub
+  ansible.builtin.command:
+    cmd: "oc --kubeconfig={{ temp_dir_path }}/hub_kubeconfig get nodes"
+  register: oc_output
+  changed_when: false
+  delegate_to: "{{ stamp_target_host }}"
+  remote_user: "{{ remote_user_name }}"
+
+- name: Display oc command output
+  ansible.builtin.debug:
+    msg: "{{ oc_output.stdout }}"

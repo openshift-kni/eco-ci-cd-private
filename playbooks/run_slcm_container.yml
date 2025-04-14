@@ -1,0 +1,146 @@
+---
+## VPN setup
+- name: Setup VPN
+  hosts: jump_host
+  gather_facts: true
+  roles:
+    - setup_vpn
+  tags:
+    - setup_vpn
+
+## SLCM tests
+- name: Clone a repository into a temporary directory on a specific host
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Ensure STAMP variable is defined
+      ansible.builtin.assert:
+        that: STAMP is defined
+        fail_msg: "STAMP variable is not defined. Please provide a valid STAMP."
+
+    - name: Determine target host based on STAMP
+      ansible.builtin.set_fact:
+        stamp_target: "{{ infra_hosts[STAMP] | default('') }}"
+      when: STAMP in infra_hosts.keys()
+
+    - name: Display pipeline execution STAMP and SITE
+      ansible.builtin.debug:
+        msg: "Pipeline executed in {{ STAMP }} on {{ SITE_NAME }}"
+
+    - name: Fail if STAMP is invalid
+      ansible.builtin.fail:
+        msg: "Error: STAMP={{ STAMP }} is invalid. Please set it to a valid value."
+      when: STAMP not in infra_hosts.keys()
+
+    - name: Create a temporary directory on the target host
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: repo_clone
+      register: temp_dir
+      delegate_to: "{{ stamp_target }}"
+      remote_user: "{{ remote_user }}"
+
+    - name: Clone the repository on the target host
+      ansible.builtin.git:
+        repo: "{{ cloud_ran_partner_repo }}"
+        dest: "{{ temp_dir.path }}"
+        clone: true
+        update: true
+        version: "{{ cloud_ran_partner_repo_version }}"
+      delegate_to: "{{ stamp_target }}"
+      remote_user: "{{ remote_user }}"
+
+    - name: Display repo path
+      ansible.builtin.debug:
+        msg: "{{ temp_dir.path }}"
+
+    # Get the hub kubeconfig
+    - name: Setup Hub Config
+      ansible.builtin.include_role:
+        name: setup_hub_config
+      vars:
+        temp_dir_path: "{{ temp_dir.path }}"
+        stamp_target_host: "{{ stamp_target }}"
+        remote_user_name: "{{ remote_user }}"
+        cluster_configs_directory: "{{ cluster_configs_dir }}"
+
+    # Pull container images
+    - name: Pull Container Images
+      ansible.builtin.include_role:
+        name: pull_container_images
+      vars:
+        temp_dir_path: "{{ temp_dir.path }}"
+        stamp_target_host: "{{ stamp_target }}"
+        remote_user_name: "{{ remote_user }}"
+        eco_validation_container: "{{ ECO_VALIDATION_CONTAINER }}"
+        eco_gotests_container: "{{ ECO_GOTESTS_CONTAINER }}"
+        podman_auth_path: "{{ PODMAN_AUTH_PATH }}"
+
+    # Prepare DCI pipeline files
+    - name: Prepare DCI Pipeline Files
+      ansible.builtin.include_role:
+        name: prepare_dci_pipeline_files
+      vars:
+        temp_dir_path: "{{ temp_dir.path }}"
+        stamp_target_host: "{{ stamp_target }}"
+        remote_user_name: "{{ remote_user }}"
+        dci_pipeline_files: "{{ DCI_PIPELINE_FILES }}"
+        prow_pipeline_id: "{{ PROW_PIPELINE_ID }}"
+        latency_duration: "{{ LATENCY_DURATION | default('1800') }}"
+        ocp_version: "{{ OCP_VERSION }}"
+        stamp_value: "{{ STAMP }}"
+        dci_remote_ci: "{{ DCI_REMOTE_CI }}"
+        site_name_value: "{{ SITE_NAME }}"
+        eco_validation_container: "{{ ECO_VALIDATION_CONTAINER }}"
+
+    # Handle Ansible vault
+    - name: Handle Ansible Vault
+      ansible.builtin.include_role:
+        name: handle_ansible_vault
+      vars:
+        temp_dir_path: "{{ temp_dir.path }}"
+        stamp_target_host: "{{ stamp_target }}"
+        remote_user_name: "{{ remote_user }}"
+        vault_password: "{{ VAULT_PASSWORD }}"
+        playbook_directory: "{{ playbook_dir }}"
+
+    # Get SNO kubeconfig file
+    - name: Setup SNO Config
+      ansible.builtin.include_role:
+        name: setup_sno_config
+      vars:
+        temp_dir_path: "{{ temp_dir.path }}"
+        stamp_target_host: "{{ stamp_target }}"
+        remote_user_name: "{{ remote_user }}"
+        site_name_value: "{{ SITE_NAME }}"
+
+    # Run the tests
+    - name: Run eDU Tests
+      ansible.builtin.include_role:
+        name: run_edu_tests
+      vars:
+        temp_dir_path: "{{ temp_dir.path }}"
+        stamp_target_host: "{{ stamp_target }}"
+        remote_user_name: "{{ remote_user }}"
+        dci_pipeline_files: "{{ DCI_PIPELINE_FILES }}"
+        skip_dci: "{{ SKIP_DCI | bool }}"
+        site_name_value: "{{ SITE_NAME }}"
+        prow_pipeline_id: "{{ PROW_PIPELINE_ID }}"
+        playbook_directory: "{{ playbook_dir }}"
+
+    - name: Remove temporary directory on target host
+      ansible.builtin.file:
+        path: "{{ temp_dir.path }}"
+        state: absent
+      delegate_to: "{{ stamp_target }}"
+      remote_user: "{{ remote_user }}"
+
+## VPN kill
+- name: Kill VPN
+  hosts: jump_host
+  gather_facts: true
+  roles:
+    - kill_vpn
+  tags:
+    - setup_vpn
+    - kill_vpn
