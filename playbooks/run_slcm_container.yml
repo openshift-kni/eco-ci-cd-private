@@ -92,7 +92,7 @@
         dci_remote_ci: "{{ DCI_REMOTE_CI }}"
         site_name_value: "{{ SITE_NAME }}"
         eco_validation_container: "{{ ECO_VALIDATION_CONTAINER }}"
-        copy_to_prow: " {{ COPY_TO_PROW }}"
+        copy_to_prow: "{{ COPY_TO_PROW }}"
         prow_junit_temp_directory: "{{ PROW_JUNIT_TEMP_DIR }}"
 
     # Handle Ansible vault
