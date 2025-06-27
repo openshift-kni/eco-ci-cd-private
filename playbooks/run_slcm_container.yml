@@ -144,5 +144,4 @@
   roles:
     - kill_vpn
   tags:
-    - setup_vpn
     - kill_vpn
