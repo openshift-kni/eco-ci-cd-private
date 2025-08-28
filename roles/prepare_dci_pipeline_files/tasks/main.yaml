@@ -42,3 +42,5 @@
     ECO_VALIDATION_CONTAINER: "{{ eco_validation_container }}"
     COPY_TO_PROW: "{{ copy_to_prow }}"
     PROW_JUNIT_TEMP_DIR: "{{ prow_junit_temp_directory }}"
+    ANSIBLE_SKIP_TAGS: "{{ ansible_skip_tags_value }}"
+    EDU_PTP: "{{ edu_ptp_value }}"

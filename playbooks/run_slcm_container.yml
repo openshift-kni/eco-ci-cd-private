@@ -94,6 +94,8 @@
         eco_validation_container: "{{ ECO_VALIDATION_CONTAINER }}"
         copy_to_prow: "{{ COPY_TO_PROW }}"
         prow_junit_temp_directory: "{{ PROW_JUNIT_TEMP_DIR }}"
+        ansible_skip_tags_value: "{{ ANSIBLE_SKIP_TAGS }}"
+        edu_ptp_value: "{{ EDU_PTP }}"
 
     # Handle Ansible vault
     - name: Handle Ansible Vault
