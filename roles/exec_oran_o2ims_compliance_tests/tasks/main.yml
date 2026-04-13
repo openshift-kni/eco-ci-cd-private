@@ -4,14 +4,6 @@
   register: found_packages
   failed_when: "'rsync' not in found_packages.ansible_facts.packages"
 
-- name: Clone eco-validation
-  ansible.builtin.git:
-    repo: "{{ eco_validation_repo }}"
-    dest: "eco-validation"
-    version: "{{ eco_validation_repo_version | default(omit) }}"
-    force: true
-
-
 - name: Remove artifacts_dir  # noqa:ignore-errors
   ansible.builtin.file:
     path: "{{ item }}"
