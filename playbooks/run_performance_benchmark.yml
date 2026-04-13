@@ -1,0 +1,42 @@
+---
+- name: Setup VPN
+  hosts: jump_host
+  gather_facts: true
+  roles:
+    - setup_vpn
+  tags:
+    - setup_vpn
+
+- name: Launch pipeline
+  hosts: bastion
+  gather_facts: false
+  tags:
+    - launch_pipeline
+  tasks:
+    - name: "Check if artifacts directory is set"
+      ansible.builtin.fail:
+        msg: "Variable artifact_dir must be set"
+      when: artifact_dir is not defined or artifact_dir | length == 0
+
+    - name: Launch pipeline from bastion
+      block:
+        - name: Run benchmarking script
+          ansible.builtin.shell: ./launch-pipeline.sh 2>&1
+          changed_when: false
+          register: pipeline_output
+      always:
+        - name: Save output logs
+          ansible.builtin.copy:
+            content: "{{ pipeline_output.stdout | default('') }}"
+            dest: "{{ artifact_dir }}/pipeline.log"
+            mode: "0644"
+          delegate_to: localhost
+          when: pipeline_output is defined
+
+- name: Kill VPN
+  hosts: jump_host
+  gather_facts: true
+  roles:
+    - kill_vpn
+  tags:
+    - kill_vpn
